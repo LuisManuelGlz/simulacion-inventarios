@@ -20,7 +20,7 @@ class Simulation():
     def __set_random_numbers(self):
         count = 0
 
-        with open('test3.csv') as csv_file:
+        with open('default.csv') as csv_file:
             csv_reader = csv.reader(csv_file)
             
             for row in csv_reader:
