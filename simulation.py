@@ -20,7 +20,7 @@ class Simulation():
     def __set_random_numbers(self):
         count = 0
 
-        with open('test3.csv') as csv_file:
+        with open('default.csv') as csv_file:
             csv_reader = csv.reader(csv_file)
             
             for row in csv_reader:
@@ -88,8 +88,8 @@ class Simulation():
             # si el inventario final es negativo
             if final_inventory < 0:
                 missing = final_inventory
-                missing_cache = missing
-                missing_total += missing
+                missing_cache += missing
+                missing_total += missing_cache
                 final_inventory = 0
             else:
                 missing = 0
@@ -132,7 +132,7 @@ class Simulation():
             if deliver == True:
                 final_inventory += self.q
                 if missing_cache < 0:
-                    final_inventory += missing
+                    final_inventory += missing_cache
                 deliver = False
             
             missing = 0
@@ -141,8 +141,9 @@ class Simulation():
 
         self.data_resolved = data_month
         
+        # sacamos los costos
         order_cost_final = order_number_cache * self.order_cost
-        inventory_cost_final = sum(data[7] for data in self.data_resolved) * self.inventory_cost
+        inventory_cost_final = sum(data[7] for data in self.data_resolved) * self.inventory_cost / len(self.data_resolved)
         missing_cost_final = abs(missing_total * self.missing_cost)
         total_cost_final = order_cost_final + inventory_cost_final + missing_cost_final
 
@@ -152,8 +153,10 @@ class Simulation():
             missing_cost_final,
             total_cost_final
         ])
-        for target_list in self.data_resolved:
-            print(target_list)
+
+        # for data in self.data_resolved:
+        #     print(data)
+        # print('--------------------')
 
     # método para obtener los costos
     def get_costs(self):
@@ -162,15 +165,10 @@ class Simulation():
         self.__set_seasonal_factors()
         self.__set_delivery_time()
         self.__calculate()
-        print("---------------")
-        print(self.all_costs)
-
-    # #  método inicia la simulación
-    # def start(self):
-    #     pass
+        return self.all_costs
 
 s = Simulation(200, 100)
-s.get_costs()
+print(s.get_costs())
 # print(s.demand)
 # print(s.seasonal_factors)
 # print(s.delivery_time)
