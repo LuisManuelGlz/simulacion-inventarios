@@ -1,5 +1,5 @@
 import csv
-from math import floor
+from math import ceil
 
 class Simulation():
     def __init__(self, q, r):
@@ -20,7 +20,7 @@ class Simulation():
     def __set_random_numbers(self):
         count = 0
 
-        with open('default.csv') as csv_file:
+        with open('test3.csv') as csv_file:
             csv_reader = csv.reader(csv_file)
             
             for row in csv_reader:
@@ -78,11 +78,11 @@ class Simulation():
 
             # buscamos la demanda entre los límites
             for demand in self.demand:
-                if demand[2] < self.random_numbers[month_number] <= demand[3]:
+                if demand[2] <= self.random_numbers[month_number] < demand[3]:
                     demand_value = int(demand[0])
                     break
             
-            adjusted_demand = floor(demand_value * factor)
+            adjusted_demand = ceil(demand_value * factor)
             final_inventory = self.initial_inventory - adjusted_demand
             
             # si el inventario final es negativo
@@ -95,7 +95,7 @@ class Simulation():
                 missing = 0
                 missing_cache = 0
 
-            monthly_average_inventory = floor((self.initial_inventory + final_inventory) / 2)
+            monthly_average_inventory = ceil((self.initial_inventory + final_inventory) / 2)
 
             # si el inventario final y no está establecido una orden
             if final_inventory <= self.r and delivery_time_value == 0:
@@ -154,9 +154,9 @@ class Simulation():
             total_cost_final
         ])
 
-        # for data in self.data_resolved:
-        #     print(data)
-        # print('--------------------')
+        for data in self.data_resolved:
+            print(data)
+        print('--------------------')
 
     # método para obtener los costos
     def get_costs(self):
