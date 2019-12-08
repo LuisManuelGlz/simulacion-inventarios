@@ -14,6 +14,7 @@ class Simulation():
         self.seasonal_factors = []
         self.delivery_time = []
         self.data_resolved = []
+        self.all_costs = []
 
     # método que establece los primeros 12 números aleatorios
     def __set_random_numbers(self):
@@ -58,19 +59,24 @@ class Simulation():
         
         delivery_time_file.close()
 
+    # método que hace la simulación
     def __calculate(self):
         data_month = []
         order_number_cache = 0
         delivery_time_value = 0
         missing = 0
+        missing_total = 0
+        missing_cache = 0
         deliver = False
         
+        # para cada mes en un rango de 12
         for month_number in range(12):
             factor = float(self.seasonal_factors[month_number][1])
             order_number = ""
             demand_value = 0
             adjusted_demand = 0
 
+            # buscamos la demanda entre los límites
             for demand in self.demand:
                 if demand[2] < self.random_numbers[month_number] <= demand[3]:
                     demand_value = int(demand[0])
@@ -79,26 +85,36 @@ class Simulation():
             adjusted_demand = floor(demand_value * factor)
             final_inventory = self.initial_inventory - adjusted_demand
             
+            # si el inventario final es negativo
             if final_inventory < 0:
                 missing = final_inventory
+                missing_cache = missing
+                missing_total += missing
                 final_inventory = 0
             else:
                 missing = 0
+                missing_cache = 0
 
             monthly_average_inventory = floor((self.initial_inventory + final_inventory) / 2)
 
+            # si el inventario final y no está establecido una orden
             if final_inventory <= self.r and delivery_time_value == 0:
-                order_number_cache += 1
+                order_number_cache += 1 # número de orden que va
                 order_number = order_number_cache
 
+                # buscamos el tiempo de llegada entre los límites
                 for delivery_time in self.delivery_time:
                     if delivery_time[2] <= self.random_numbers[month_number] < delivery_time[3]:
                         delivery_time_value = int(delivery_time[0]) + 1
                         break
 
+            # si hay una orden pendiente
             if delivery_time_value > 0:
+                # reducimos un mes
                 delivery_time_value -= 1
+                # si ya pasó el tiempo establecido
                 if delivery_time_value == 0:
+                    # en el siguiente mes se entrega la orden
                     deliver = True
 
             data_month.append([
@@ -107,32 +123,54 @@ class Simulation():
                 self.random_numbers[month_number],
                 adjusted_demand,
                 final_inventory,
-                missing,
+                missing_cache,
                 order_number,
                 monthly_average_inventory
             ])
 
+            # entregamos orden (no se verá reflejado hasta que empiece el siguiente mes)
             if deliver == True:
                 final_inventory += self.q
+                if missing_cache < 0:
+                    final_inventory += missing
                 deliver = False
             
             missing = 0
 
             self.initial_inventory = final_inventory
 
-        for test in data_month:
-            print(test)
+        self.data_resolved = data_month
+        
+        order_cost_final = order_number_cache * self.order_cost
+        inventory_cost_final = sum(data[7] for data in self.data_resolved) * self.inventory_cost
+        missing_cost_final = abs(missing_total * self.missing_cost)
+        total_cost_final = order_cost_final + inventory_cost_final + missing_cost_final
 
-    #  método inicia la simulación
-    def start(self):
+        self.all_costs.append([
+            order_cost_final,
+            inventory_cost_final,
+            missing_cost_final,
+            total_cost_final
+        ])
+        for target_list in self.data_resolved:
+            print(target_list)
+
+    # método para obtener los costos
+    def get_costs(self):
         self.__set_random_numbers()
         self.__set_demand()
         self.__set_seasonal_factors()
         self.__set_delivery_time()
         self.__calculate()
+        print("---------------")
+        print(self.all_costs)
+
+    # #  método inicia la simulación
+    # def start(self):
+    #     pass
 
 s = Simulation(200, 100)
-s.start()
+s.get_costs()
 # print(s.demand)
 # print(s.seasonal_factors)
 # print(s.delivery_time)
