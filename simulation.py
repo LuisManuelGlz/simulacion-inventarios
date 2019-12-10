@@ -203,6 +203,8 @@ class Simulation():
             if flag_2:
                 # si el costo total es menor al costo total anterior
                 if self.all_costs[i][-2] < self.all_costs[i-1][-2]:
+                    # el costo total anterior no es la mejor opción
+                    self.all_costs[i-1][-1] = 'No'
                     self.q += 25
                 else:
                     # el costo total actual no es la mejor opción
