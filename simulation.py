@@ -15,6 +15,7 @@ class Simulation():
         self.delivery_time = []
         self.data_resolved = []
         self.all_costs = []
+        self.random_count = 0
 
     # método que establece los primeros 12 números aleatorios
     def __set_random_numbers(self):
@@ -24,7 +25,7 @@ class Simulation():
             csv_reader = csv.reader(csv_file)
             
             for row in csv_reader:
-                if count >= 12:
+                if count >= 120:
                     break
                 self.random_numbers.append(row[0])
                 count += 1
@@ -61,6 +62,7 @@ class Simulation():
 
     # método que hace la simulación
     def __calculate(self):
+        self.initial_inventory = 150
         data_month = []
         order_number_cache = 0
         delivery_time_value = 0
@@ -78,7 +80,7 @@ class Simulation():
 
             # buscamos la demanda entre los límites
             for demand in self.demand:
-                if demand[2] <= self.random_numbers[month_number] < demand[3]:
+                if demand[2] <= self.random_numbers[self.random_count] < demand[3]:
                     demand_value = int(demand[0])
                     break
             
@@ -104,7 +106,7 @@ class Simulation():
 
                 # buscamos el tiempo de llegada entre los límites
                 for delivery_time in self.delivery_time:
-                    if delivery_time[2] <= self.random_numbers[month_number] < delivery_time[3]:
+                    if delivery_time[2] <= self.random_numbers[self.random_count] < delivery_time[3]:
                         delivery_time_value = int(delivery_time[0]) + 1
                         break
 
@@ -120,7 +122,7 @@ class Simulation():
             data_month.append([
                 month_number + 1,
                 self.initial_inventory,
-                self.random_numbers[month_number],
+                self.random_numbers[self.random_count],
                 adjusted_demand,
                 final_inventory,
                 missing_cache,
@@ -138,6 +140,7 @@ class Simulation():
             missing = 0
 
             self.initial_inventory = final_inventory
+            self.random_count += 1
 
         self.data_resolved = data_month
         
@@ -149,10 +152,14 @@ class Simulation():
 
         self.all_costs.append([
             order_cost_final,
+            self.r,
+            self.q,
             inventory_cost_final,
             missing_cost_final,
             total_cost_final
         ])
+
+        
 
         for data in self.data_resolved:
             print(data)
@@ -160,15 +167,54 @@ class Simulation():
 
     # método para obtener los costos
     def get_costs(self):
+        flag_1 = True # bandera para que pueda mover R
+        flag_2 = False # bandera para que pueda mover Q
+
         self.__set_random_numbers()
         self.__set_demand()
         self.__set_seasonal_factors()
         self.__set_delivery_time()
-        self.__calculate()
+
+        for i in range(100):
+            self.__calculate()
+            self.all_costs[i].append('Sí') # por defeto será la mejor opción
+
+            # si es primera iteración
+            if i == 0:
+                self.r += 25
+            
+            # si es la segunda en adelante hasta que se pueda operar R
+            if i > 0 and flag_1:
+                # si el costo total es menor al costo total anterior
+                if self.all_costs[i][-2] < self.all_costs[i-1][-2]:
+                    # el costo total anterior no es la mejor opción
+                    self.all_costs[i-1][-1] = 'No'
+                    self.r += 25
+                else:
+                    # el costo total actual no es la mejor opción
+                    self.all_costs[i][-1] = 'No'
+                    self.r -= 25
+                    self.q += 25
+                    flag_1 = False # deja de mover en R
+                    flag_2 = True # comenzará a mover Q en la siguiente iteración
+                    continue
+
+            # si podemos mover Q
+            if flag_2:
+                # si el costo total es menor al costo total anterior
+                if self.all_costs[i][-2] < self.all_costs[i-1][-2]:
+                    self.q += 25
+                else:
+                    # el costo total actual no es la mejor opción
+                    self.all_costs[i][-1] = 'No'
+                    # self.q -= 25
+                    break
+
         return self.all_costs
 
-s = Simulation(200, 100)
-print(s.get_costs())
+s = Simulation(300, 500)
+for sim in s.get_costs():
+    print(sim)
 # print(s.demand)
 # print(s.seasonal_factors)
 # print(s.delivery_time)
